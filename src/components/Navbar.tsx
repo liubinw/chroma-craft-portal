@@ -14,10 +14,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserRound } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 
-const Navbar = () => {
+// Define the props interface for Navbar
+interface NavbarProps {
+  // Making isLoggedIn optional since we now get it from useAuth
+  isLoggedIn?: boolean;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ isLoggedIn: isLoggedInProp }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const isLoggedIn = !!user;
+  // Use the prop value if provided, otherwise use the user from useAuth
+  const isLoggedIn = isLoggedInProp !== undefined ? isLoggedInProp : !!user;
 
   const handleSignOut = async () => {
     await signOut();
