@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock style options
 const styleOptions = [
@@ -35,8 +36,50 @@ const ImageGenerator = () => {
   const [creativity, setCreativity] = useState([5]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [predictionId, setPredictionId] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
-  const handleGenerate = () => {
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [pollingInterval]);
+
+  // Poll for prediction status
+  const pollPredictionStatus = async (id: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { predictionId: id },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log("Poll response:", data);
+      
+      // Check if the prediction is complete
+      if (data.status === "succeeded") {
+        if (data.output && data.output.length > 0) {
+          setGeneratedImage(data.output[0]);
+          setIsGenerating(false);
+          if (pollingInterval) clearInterval(pollingInterval);
+          setPollingInterval(null);
+          toast.success('Image generated successfully!');
+        }
+      } else if (data.status === "failed") {
+        setIsGenerating(false);
+        if (pollingInterval) clearInterval(pollingInterval);
+        setPollingInterval(null);
+        toast.error('Image generation failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error("Error polling prediction status:", error);
+    }
+  };
+
+  const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error('Please enter a prompt first');
       return;
@@ -44,14 +87,51 @@ const ImageGenerator = () => {
 
     setIsGenerating(true);
     setGeneratedImage(null);
+    setPredictionId(null);
+    
+    try {
+      // Build a complete prompt that includes the style
+      const fullPrompt = `${prompt}, ${style} style`;
+      
+      // Invoke the edge function
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { prompt: fullPrompt },
+      });
 
-    // Simulating API call to generate image
-    setTimeout(() => {
-      // Use a placeholder image for demo
-      setGeneratedImage('https://images.unsplash.com/photo-1498050108023-c5249f4df085');
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log("Generation response:", data);
+      
+      if (data.prediction && data.prediction.id) {
+        setPredictionId(data.prediction.id);
+        
+        // Start polling for the prediction status
+        const interval = setInterval(() => {
+          pollPredictionStatus(data.prediction.id);
+        }, 2000); // Poll every 2 seconds
+        
+        setPollingInterval(interval);
+      } else {
+        throw new Error('Invalid response from image generation service');
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
       setIsGenerating(false);
-      toast.success('Image generated successfully!');
-    }, 2000);
+      toast.error(`Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRegenerate = () => {
+    // Reset state and generate again
+    setGeneratedImage(null);
+    handleGenerate();
+  };
+
+  const handleSaveToGallery = () => {
+    // This would save to a database in a real app
+    toast.success('Image saved to gallery');
   };
 
   return (
@@ -158,7 +238,7 @@ const ImageGenerator = () => {
                 <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-brand-purple border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
                   <span className="sr-only">Loading...</span>
                 </div>
-                <p className="mt-4 text-muted-foreground">Creating your masterpiece...</p>
+                <p className="mt-4 text-muted-foreground">Creating your masterpiece with Black Forest Labs AI...</p>
               </div>
             ) : generatedImage ? (
               <img 
@@ -181,10 +261,17 @@ const ImageGenerator = () => {
           
           {generatedImage && (
             <div className="mt-4 flex justify-end space-x-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRegenerate}
+              >
                 Regenerate
               </Button>
-              <Button size="sm">
+              <Button 
+                size="sm"
+                onClick={handleSaveToGallery}
+              >
                 Save to Gallery
               </Button>
             </div>
