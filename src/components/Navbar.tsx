@@ -12,9 +12,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserRound } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
 
-const Navbar = ({ isLoggedIn = false }) => {
+const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const isLoggedIn = !!user;
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="glass-navbar fixed top-0 left-0 right-0 z-50 py-4">
@@ -45,7 +52,7 @@ const Navbar = ({ isLoggedIn = false }) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="rounded-full" size="icon">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1649972904349-6e44c42644a7" alt="User" />
+                    <AvatarImage src={user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"} alt={user?.user_metadata?.username || "User"} />
                     <AvatarFallback><UserRound className="h-5 w-5" /></AvatarFallback>
                   </Avatar>
                 </Button>
@@ -63,8 +70,8 @@ const Navbar = ({ isLoggedIn = false }) => {
                   <NavLink to="/settings" className="flex w-full">Settings</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <NavLink to="/" className="flex w-full">Log out</NavLink>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <span className="flex w-full">Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -114,9 +121,15 @@ const Navbar = ({ isLoggedIn = false }) => {
                 <NavLink to="/profile" className="text-foreground hover:text-brand-purple transition-colors" onClick={() => setMobileMenuOpen(false)}>
                   Profile
                 </NavLink>
-                <NavLink to="/" className="text-foreground hover:text-brand-purple transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                <button 
+                  onClick={() => {
+                    handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-left text-foreground hover:text-brand-purple transition-colors"
+                >
                   Log out
-                </NavLink>
+                </button>
               </>
             ) : (
               <div className="flex flex-col space-y-2">

@@ -4,26 +4,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { NavLink, useNavigate } from 'react-router-dom';
-import { toast } from "sonner";
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = () => {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const { signUp, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate signup
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
-    }, 1000);
+    try {
+      await signUp(email, password, username);
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error('Signup error:', error);
+    }
   };
 
   return (
@@ -35,14 +33,14 @@ const SignupForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
-              id="name"
+              id="username"
               type="text"
-              placeholder="John Doe"
+              placeholder="johndoe"
               className="glass-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
@@ -73,8 +71,8 @@ const SignupForm = () => {
               Must be at least 8 characters.
             </p>
           </div>
-          <Button type="submit" className="btn-gradient w-full" disabled={isLoading}>
-            {isLoading ? 'Creating account...' : 'Sign up'}
+          <Button type="submit" className="btn-gradient w-full" disabled={loading}>
+            {loading ? 'Creating account...' : 'Sign up'}
           </Button>
         </form>
         
@@ -88,7 +86,7 @@ const SignupForm = () => {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="hover-lift">
+          <Button variant="outline" className="hover-lift" disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" className="mr-2">
               <path fill="#EA4335" d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z" />
               <path fill="#34A853" d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z" />
@@ -97,7 +95,7 @@ const SignupForm = () => {
             </svg>
             Google
           </Button>
-          <Button variant="outline" className="hover-lift">
+          <Button variant="outline" className="hover-lift" disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" className="mr-2">
               <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" fill="#1877F2" />
               <path d="M15.893 14.89l.443-2.89h-2.773v-1.876c0-.791.387-1.562 1.63-1.562h1.26v-2.46s-1.144-.195-2.238-.195c-2.285 0-3.777 1.384-3.777 3.89V12h-2.54v2.89h2.54v6.988C10.83 21.905 11.408 22 12 22s1.17-.095 1.753-.122v-6.988h2.14z" fill="#FFFFFF" />
