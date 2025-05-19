@@ -37,7 +37,8 @@ const ImageGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [predictionId, setPredictionId] = useState<string | null>(null);
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+  // Fix: Change the type from number to NodeJS.Timeout | null
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Clean up polling on unmount
   useEffect(() => {
